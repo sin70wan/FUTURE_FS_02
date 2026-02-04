@@ -62,7 +62,7 @@ const createLead = async (req, res) => {
             notes: [{
                 content: 'Lead created',
                 type: 'created',
-                createdBy: 'System'
+                createdBy: req.user ? req.user.name : 'System' // Use logged in user
             }]
         });
         
@@ -93,7 +93,7 @@ const updateLead = async (req, res) => {
             const statusNote = {
                 content: `Status changed from ${lead.status} to ${req.body.status}`,
                 type: 'status',
-                createdBy: req.user?.name || 'System'
+                createdBy: req.user ? req.user.name : 'System' // Use logged in user
             };
             req.body.notes = [...(lead.notes || []), statusNote];
         }
@@ -148,7 +148,7 @@ const addNote = async (req, res) => {
         const note = {
             content,
             type,
-            createdBy: req.user?.name || 'Admin',
+            createdBy: req.user ? req.user.name : 'System', // Use logged in user
             createdAt: new Date()
         };
         

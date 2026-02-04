@@ -9,6 +9,10 @@ const {
     addNote,
     getDashboardStats
 } = require('../controllers/leadController');
+const { protect, authorize } = require('../middleware/auth');
+
+// Protect all routes
+router.use(protect);
 
 // Dashboard stats
 router.get('/dashboard/stats', getDashboardStats);
