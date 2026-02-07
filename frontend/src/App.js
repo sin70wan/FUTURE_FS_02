@@ -4,29 +4,24 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Toaster } from 'react-hot-toast';
 
-// Import your actual pages
+// Import pages
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Leads from './pages/Leads';
 import LeadDetail from './pages/LeadDetail';
-import ProtectedRoute from './components/ProtectedRoute';
 
 // Create theme
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#2563eb',
-    },
-    secondary: {
-      main: '#64748b',
-    },
-    background: {
-      default: '#f8fafc',
+      main: '#667eea',
     },
   },
 });
 
 function App() {
+  console.log('🚀 App component loaded');
+  
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -35,23 +30,10 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/leads" element={
-            <ProtectedRoute>
-              <Leads />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/leads/:id" element={
-            <ProtectedRoute>
-              <LeadDetail />
-            </ProtectedRoute>
-          } />
+          {/* TEMPORARILY remove ProtectedRoute */}
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/leads" element={<Leads />} />
+          <Route path="/leads/:id" element={<LeadDetail />} />
           
           <Route path="/" element={<Login />} />
         </Routes>

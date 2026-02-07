@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   AppBar,
   Box,
-  CssBaseline,
   Drawer,
   IconButton,
   List,
@@ -12,7 +11,10 @@ import {
   Toolbar,
   Typography,
   Avatar,
-  Badge
+  Badge,
+  Menu,
+  MenuItem,
+  Divider
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -39,6 +41,7 @@ const menuItems = [
 
 const Layout = ({ children, title }) => {
   const [open, setOpen] = useState(true);
+  const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -46,7 +49,13 @@ const Layout = ({ children, title }) => {
     setOpen(!open);
   };
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   const handleLogout = async () => {
     try {
@@ -58,14 +67,21 @@ const Layout = ({ children, title }) => {
     localStorage.removeItem('user');
     toast.success('Logged out successfully');
     navigate('/login');
+    handleMenuClose();
   };
 
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
   return (
-    <Box sx={{ display: 'flex' }}>
-      <CssBaseline />
-      
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       {/* AppBar */}
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <AppBar 
+        position="fixed" 
+        sx={{ 
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        }}
+      >
         <Toolbar>
           <IconButton
             color="inherit"
@@ -85,18 +101,61 @@ const Layout = ({ children, title }) => {
             </Badge>
           </IconButton>
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ mr: 1 }}>{user.name?.charAt(0) || 'A'}</Avatar>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Avatar 
+              sx={{ 
+                bgcolor: 'white', 
+                color: '#764ba2',
+                cursor: 'pointer'
+              }}
+              onClick={handleMenuOpen}
+            >
+              {user.name?.charAt(0) || 'A'}
+            </Avatar>
             <Box>
-              <Typography variant="body2">{user.name || 'Admin User'}</Typography>
-              <Typography variant="caption" sx={{ opacity: 0.7 }}>
+              <Typography variant="body2" sx={{ color: 'white' }}>
+                {user.name || 'Admin User'}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
                 {user.email || 'admin@nexuscrm.com'}
               </Typography>
             </Box>
-            <IconButton color="inherit" onClick={handleLogout} title="Logout">
-              <Logout />
-            </IconButton>
           </Box>
+          
+          {/* User Menu */}
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            PaperProps={{
+              sx: { width: 200, mt: 1 }
+            }}
+          >
+            <MenuItem>
+              <Avatar sx={{ width: 32, height: 32, mr: 2 }}>
+                {user.name?.charAt(0) || 'A'}
+              </Avatar>
+              <Box>
+                <Typography variant="body2">{user.name}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {user.email}
+                </Typography>
+              </Box>
+            </MenuItem>
+            <Divider />
+            <MenuItem onClick={() => navigate('/settings')}>
+              <ListItemIcon>
+                <Settings fontSize="small" />
+              </ListItemIcon>
+              Settings
+            </MenuItem>
+            <MenuItem onClick={handleLogout}>
+              <ListItemIcon>
+                <Logout fontSize="small" />
+              </ListItemIcon>
+              Logout
+            </MenuItem>
+          </Menu>
         </Toolbar>
       </AppBar>
 
@@ -118,19 +177,28 @@ const Layout = ({ children, title }) => {
         }}
       >
         <Toolbar />
-        <Box sx={{ overflow: 'auto' }}>
+        <Box sx={{ overflow: 'auto', mt: 2 }}>
           <List>
             {menuItems.map((item) => (
               <ListItem
                 button
                 key={item.text}
-                selected={location.pathname === item.path}
+                selected={location.pathname.startsWith(item.path)}
                 onClick={() => navigate(item.path)}
                 sx={{
                   minHeight: 48,
                   justifyContent: open ? 'initial' : 'center',
                   px: 2.5,
-                  bgcolor: location.pathname === item.path ? 'action.selected' : 'transparent'
+                  mx: 1,
+                  borderRadius: 1,
+                  mb: 0.5,
+                  '&.Mui-selected': {
+                    bgcolor: 'primary.light',
+                    color: 'primary.main',
+                    '&:hover': {
+                      bgcolor: 'primary.light',
+                    }
+                  }
                 }}
               >
                 <ListItemIcon
@@ -138,11 +206,20 @@ const Layout = ({ children, title }) => {
                     minWidth: 0,
                     mr: open ? 3 : 'auto',
                     justifyContent: 'center',
+                    color: 'inherit'
                   }}
                 >
                   {item.icon}
                 </ListItemIcon>
-                <ListItemText primary={item.text} sx={{ opacity: open ? 1 : 0 }} />
+                <ListItemText 
+                  primary={item.text} 
+                  sx={{ 
+                    opacity: open ? 1 : 0,
+                    '& .MuiTypography-root': {
+                      fontWeight: location.pathname.startsWith(item.path) ? 'bold' : 'normal'
+                    }
+                  }} 
+                />
               </ListItem>
             ))}
           </List>
@@ -150,9 +227,9 @@ const Layout = ({ children, title }) => {
       </Drawer>
 
       {/* Main Content */}
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 3, background: '#f8fafc', minHeight: '100vh' }}>
         <Toolbar />
-        <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
+        <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ mb: 4, color: '#1e293b' }}>
           {title}
         </Typography>
         {children}

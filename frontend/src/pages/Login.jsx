@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { 
-  Container, 
-  Paper, 
-  TextField, 
-  Button, 
-  Typography, 
-  Box, 
-  Avatar, 
+import {
+  Container,
+  Paper,
+  TextField,
+  Button,
+  Typography,
+  Box,
+  Avatar,
   CircularProgress,
-  Alert 
+  Alert
 } from '@mui/material';
 import { LockOutlined } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -25,45 +25,55 @@ const Login = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
+    setFormData({
+      ...formData,
       [name]: value
-    }));
+    });
     setError('');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    // Simple validation
-    if (!formData.email || !formData.password) {
-      setError('Please fill in all fields');
-      setLoading(false);
-      return;
+  console.log('🔐 Login attempt with:', formData.email);
+
+  // SIMPLE VALIDATION - NO BACKEND CALL
+  setTimeout(() => {
+    if (formData.email === 'admin@nexuscrm.com' && formData.password === 'admin123') {
+      console.log('✅ Valid credentials');
+      
+      // Create mock token
+      const mockToken = 'demo-token-' + Date.now();
+      
+      console.log('🔄 Setting token:', mockToken);
+      localStorage.setItem('token', mockToken);
+      localStorage.setItem('user', JSON.stringify({
+        id: 'demo-id',
+        name: 'Admin User',
+        email: formData.email,
+        role: 'admin'
+      }));
+      
+      console.log('📋 After setting - Token:', localStorage.getItem('token'));
+      console.log('📋 After setting - User:', localStorage.getItem('user'));
+      
+      toast.success('Login successful!');
+      
+      // Use window.location to force navigation
+      console.log('🚀 Navigating to /dashboard');
+      window.location.href = '/dashboard';
+      
+    } else {
+      console.log('❌ Invalid credentials');
+      setError('Invalid credentials. Use: admin@nexuscrm.com / admin123');
+      toast.error('Login failed');
     }
+    setLoading(false);
+  }, 1000);
+};
 
-    // Simulate API call
-    setTimeout(() => {
-      if (formData.email === 'admin@nexuscrm.com' && formData.password === 'admin123') {
-        toast.success('Login successful!');
-        localStorage.setItem('token', 'demo-jwt-token');
-        localStorage.setItem('user', JSON.stringify({
-          name: 'Admin User',
-          email: formData.email,
-          role: 'admin'
-        }));
-        navigate('/dashboard');
-      } else {
-        setError('Invalid credentials. Use: admin@nexuscrm.com / admin123');
-        toast.error('Login failed');
-      }
-      setLoading(false);
-    }, 1000);
-  };
-
-  // Pre-fill demo credentials
   const handleDemoLogin = () => {
     setFormData({
       email: 'admin@nexuscrm.com',
@@ -85,10 +95,17 @@ const Login = () => {
           <LockOutlined />
         </Avatar>
         <Typography component="h1" variant="h5">
-          NexusCRM Login
+          NexusCRM
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          Client Lead Management System
         </Typography>
         
-        <Paper elevation={3} sx={{ p: 4, mt: 3, width: '100%' }}>
+        <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
+          <Typography component="h2" variant="h6" align="center" gutterBottom>
+            Admin Login
+          </Typography>
+          
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
@@ -135,14 +152,17 @@ const Login = () => {
           
           <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Button
+              fullWidth
               variant="outlined"
               onClick={handleDemoLogin}
+              disabled={loading}
               sx={{ mb: 2 }}
             >
-              Use Demo Credentials
+              Use Demo Admin Account
             </Button>
+            
             <Typography variant="body2" color="text.secondary">
-              Demo: admin@nexuscrm.com / admin123
+              Default admin: admin@nexuscrm.com / admin123
             </Typography>
           </Box>
         </Paper>

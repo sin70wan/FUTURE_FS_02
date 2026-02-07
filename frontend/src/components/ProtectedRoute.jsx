@@ -7,34 +7,45 @@ const ProtectedRoute = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check authentication
-    const token = localStorage.getItem('token');
-    console.log('🔐 ProtectedRoute - Token check:', token ? 'Token exists' : 'No token');
+    console.log('🔄 ProtectedRoute - Checking authentication...');
+    console.log('🔑 Token in localStorage:', localStorage.getItem('token'));
+    console.log('👤 User in localStorage:', localStorage.getItem('user'));
     
-    // For demo purposes, accept any token
+    const token = localStorage.getItem('token');
+    
     if (token) {
+      console.log('✅ Token found, setting authenticated to TRUE');
       setIsAuthenticated(true);
     } else {
+      console.log('❌ No token found, setting authenticated to FALSE');
       setIsAuthenticated(false);
     }
     
     setLoading(false);
   }, []);
 
+  console.log('📊 ProtectedRoute state:', { loading, isAuthenticated });
+
   if (loading) {
+    console.log('⏳ ProtectedRoute - Loading...');
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh' 
+      }}>
         <CircularProgress />
       </Box>
     );
   }
 
   if (!isAuthenticated) {
-    console.log('🚫 ProtectedRoute - Redirecting to login');
+    console.log('🚫 ProtectedRoute - NOT authenticated, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
-  console.log('✅ ProtectedRoute - Allowing access');
+  console.log('✅ ProtectedRoute - Authenticated, rendering children');
   return children;
 };
 

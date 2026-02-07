@@ -9,23 +9,17 @@ import {
   IconButton,
   TextField,
   InputAdornment,
-  Avatar,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Divider,
   CircularProgress,
-  Alert
+  Alert,
+  Button
 } from '@mui/material';
 import {
   Search,
   Add,
+  TrendingUp,
   Email,
   Phone,
-  PersonAdd,
-  TrendingUp,
-  TrendingDown
+  PersonAdd
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { leadAPI } from '../services/api';
@@ -60,6 +54,10 @@ const Dashboard = () => {
     }
   };
 
+  const handleAddLead = () => {
+    navigate('/leads?action=add');
+  };
+
   if (loading) {
     return (
       <Layout title="Dashboard Overview">
@@ -76,6 +74,9 @@ const Dashboard = () => {
         <Alert severity="error" sx={{ m: 2 }}>
           {error}
         </Alert>
+        <Button onClick={fetchDashboardData} variant="outlined">
+          Retry
+        </Button>
       </Layout>
     );
   }
@@ -83,7 +84,7 @@ const Dashboard = () => {
   return (
     <Layout title="Dashboard Overview">
       {/* Top Bar */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <TextField
           placeholder="Search leads, companies..."
           variant="outlined"
@@ -99,16 +100,13 @@ const Dashboard = () => {
           }}
           sx={{ width: 300 }}
         />
-        <IconButton 
-          color="primary" 
-          sx={{ bgcolor: 'primary.main', color: 'white' }}
-          onClick={() => navigate('/leads')}
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={handleAddLead}
         >
-          <Add />
-          <Typography variant="body2" sx={{ ml: 1 }}>
-            Add New Lead
-          </Typography>
-        </IconButton>
+          Add New Lead
+        </Button>
       </Box>
 
       {/* Stats Cards */}
@@ -116,18 +114,15 @@ const Dashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Typography color="textSecondary" gutterBottom>
+              <Typography color="textSecondary" gutterBottom variant="body2">
                 Total Leads
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="h4">{stats?.totalLeads || 0}</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <TrendingUp sx={{ color: '#10b981', mr: 1 }} />
-                  <Typography color="#10b981">
+                  <Typography color="#10b981" variant="body2">
                     +12%
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary" sx={{ ml: 1 }}>
-                    vs last month
                   </Typography>
                 </Box>
               </Box>
@@ -138,19 +133,16 @@ const Dashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Typography color="textSecondary" gutterBottom>
+              <Typography color="textSecondary" gutterBottom variant="body2">
                 New Leads
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="h4">{stats?.newLeads || 0}</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <TrendingUp sx={{ color: '#10b981', mr: 1 }} />
-                  <Typography color="#10b981">
+                  <Typography color="#10b981" variant="body2">
                     +5%
                   </Typography>
-                  <Typography variant="body2" color="textSecondary" sx={{ ml: 1 }}>
-                    vs last week
-                  </Typography>
                 </Box>
               </Box>
             </CardContent>
@@ -160,20 +152,10 @@ const Dashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Typography color="textSecondary" gutterBottom>
+              <Typography color="textSecondary" gutterBottom variant="body2">
                 Contacted
               </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="h4">{stats?.contactedLeads || 0}</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Typography color="#64748b">
-                    0%
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary" sx={{ ml: 1 }}>
-                    vs last month
-                  </Typography>
-                </Box>
-              </Box>
+              <Typography variant="h4">{stats?.contactedLeads || 0}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -181,18 +163,15 @@ const Dashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Typography color="textSecondary" gutterBottom>
+              <Typography color="textSecondary" gutterBottom variant="body2">
                 Converted
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="h4">{stats?.convertedLeads || 0}</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <TrendingUp sx={{ color: '#10b981', mr: 1 }} />
-                  <Typography color="#10b981">
+                  <Typography color="#10b981" variant="body2">
                     +18%
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary" sx={{ ml: 1 }}>
-                    vs last month
                   </Typography>
                 </Box>
               </Box>
@@ -206,96 +185,135 @@ const Dashboard = () => {
         {/* Recent Leads */}
         <Grid item xs={12} md={8}>
           <Paper sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
               <Typography variant="h6">Recent Leads</Typography>
-              <Typography 
-                color="primary" 
-                sx={{ cursor: 'pointer' }}
+              <Button
+                variant="text"
                 onClick={() => navigate('/leads')}
               >
                 View All
-              </Typography>
+              </Button>
             </Box>
-            <List>
-              {recentLeads.length > 0 ? (
-                recentLeads.map((lead, index) => (
-                  <React.Fragment key={lead._id || index}>
-                    <ListItem 
-                      alignItems="flex-start"
-                      sx={{ cursor: 'pointer' }}
-                      onClick={() => navigate(`/leads/${lead._id}`)}
-                    >
-                      <ListItemAvatar>
-                        <Avatar>{lead.name?.charAt(0) || 'L'}</Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={
-                          <Typography variant="body1">
-                            <strong>{lead.name}</strong> - {lead.email}
-                          </Typography>
-                        }
-                        secondary={
-                          <>
-                            <Typography component="span" variant="body2" color="text.primary">
-                              {lead.company || 'No company'}
-                            </Typography>
-                            {` — Status: ${lead.status} | Source: ${lead.source}`}
-                          </>
-                        }
-                      />
-                    </ListItem>
-                    {index < recentLeads.length - 1 && <Divider variant="inset" component="li" />}
-                  </React.Fragment>
-                ))
-              ) : (
-                <Typography color="textSecondary" sx={{ p: 2, textAlign: 'center' }}>
-                  No leads yet. Add your first lead!
-                </Typography>
-              )}
-            </List>
+            
+            {recentLeads.length > 0 ? (
+              <Box>
+                {recentLeads.map((lead) => (
+                  <Box
+                    key={lead._id}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      py: 2,
+                      borderBottom: '1px solid',
+                      borderColor: 'divider',
+                      '&:last-child': { borderBottom: 'none' }
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: '50%',
+                          bgcolor: 'primary.main',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        {lead.name?.charAt(0) || 'L'}
+                      </Box>
+                      <Box>
+                        <Typography variant="body1" fontWeight="medium">
+                          {lead.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {lead.email}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        {lead.source}
+                      </Typography>
+                      <Box
+                        sx={{
+                          px: 2,
+                          py: 0.5,
+                          borderRadius: 1,
+                          bgcolor: lead.status === 'New' ? '#dbeafe' : 
+                                   lead.status === 'Contacted' ? '#fef3c7' : '#d1fae5',
+                          color: lead.status === 'New' ? '#1e40af' : 
+                                 lead.status === 'Contacted' ? '#92400e' : '#065f46',
+                          fontSize: '0.75rem',
+                          fontWeight: 'medium'
+                        }}
+                      >
+                        {lead.status}
+                      </Box>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                No leads found. Add your first lead!
+              </Typography>
+            )}
           </Paper>
         </Grid>
 
-        {/* Quick Stats */}
+        {/* Quick Actions */}
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>Quick Stats</Typography>
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="body2" color="textSecondary" gutterBottom>
-                Lead Status Distribution
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography>New</Typography>
-                  <Typography fontWeight="bold">{stats?.newLeads || 0}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography>Contacted</Typography>
-                  <Typography fontWeight="bold">{stats?.contactedLeads || 0}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography>Converted</Typography>
-                  <Typography fontWeight="bold">{stats?.convertedLeads || 0}</Typography>
-                </Box>
-              </Box>
-            </Box>
-            
-            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Quick Actions</Typography>
+            <Typography variant="h6" gutterBottom>Quick Actions</Typography>
             <Grid container spacing={2}>
               <Grid item xs={6}>
-                <Card 
-                  sx={{ textAlign: 'center', p: 2, cursor: 'pointer' }}
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<Email />}
                   onClick={() => navigate('/leads')}
+                  sx={{ py: 1.5 }}
                 >
-                  <Email sx={{ fontSize: 40, color: '#2563eb', mb: 1 }} />
-                  <Typography variant="body2">Send Email</Typography>
-                </Card>
+                  Send Email
+                </Button>
               </Grid>
               <Grid item xs={6}>
-                <Card sx={{ textAlign: 'center', p: 2, cursor: 'pointer' }}>
-                  <Phone sx={{ fontSize: 40, color: '#10b981', mb: 1 }} />
-                  <Typography variant="body2">Make Call</Typography>
-                </Card>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<Phone />}
+                  onClick={() => navigate('/leads')}
+                  sx={{ py: 1.5 }}
+                >
+                  Make Call
+                </Button>
+              </Grid>
+              <Grid item xs={6}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<PersonAdd />}
+                  onClick={handleAddLead}
+                  sx={{ py: 1.5 }}
+                >
+                  Add Lead
+                </Button>
+              </Grid>
+              <Grid item xs={6}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={() => navigate('/leads')}
+                  sx={{ py: 1.5 }}
+                >
+                  View All
+                </Button>
               </Grid>
             </Grid>
           </Paper>
