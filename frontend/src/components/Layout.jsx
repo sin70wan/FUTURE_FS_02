@@ -27,7 +27,10 @@ import {
   Logout
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { authAPI } from '../services/api';
+// CHANGE THIS LINE:
+// import { authAPI } from '../services/api';
+// TO THIS:
+import { auth } from '../services/auth';  // Import auth service
 import toast from 'react-hot-toast';
 
 const drawerWidth = 240;
@@ -57,20 +60,13 @@ const Layout = ({ children, title }) => {
     setAnchorEl(null);
   };
 
-  const handleLogout = async () => {
-    try {
-      await authAPI.logout();
-    } catch (error) {
-      // Ignore logout errors
-    }
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const handleLogout = () => {
+    auth.logout(); // This already handles token removal and redirect
     toast.success('Logged out successfully');
-    navigate('/login');
     handleMenuClose();
   };
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = auth.getCurrentUser() || { name: 'User', email: '', role: 'user' };
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -92,7 +88,7 @@ const Layout = ({ children, title }) => {
             {open ? <ChevronLeft /> : <MenuIcon />}
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            NexusCRM
+            Mini CRM
           </Typography>
           
           <IconButton color="inherit" sx={{ mr: 2 }}>
@@ -110,14 +106,14 @@ const Layout = ({ children, title }) => {
               }}
               onClick={handleMenuOpen}
             >
-              {user.name?.charAt(0) || 'A'}
+              {user.username?.charAt(0) || user.name?.charAt(0) || 'A'}
             </Avatar>
             <Box>
               <Typography variant="body2" sx={{ color: 'white' }}>
-                {user.name || 'Admin User'}
+                {user.username || user.name || 'User'}
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                {user.email || 'admin@nexuscrm.com'}
+                {user.email || ''} ({user.role || 'user'})
               </Typography>
             </Box>
           </Box>
@@ -133,10 +129,10 @@ const Layout = ({ children, title }) => {
           >
             <MenuItem>
               <Avatar sx={{ width: 32, height: 32, mr: 2 }}>
-                {user.name?.charAt(0) || 'A'}
+                {user.username?.charAt(0) || user.name?.charAt(0) || 'A'}
               </Avatar>
               <Box>
-                <Typography variant="body2">{user.name}</Typography>
+                <Typography variant="body2">{user.username || user.name}</Typography>
                 <Typography variant="caption" color="text.secondary">
                   {user.email}
                 </Typography>

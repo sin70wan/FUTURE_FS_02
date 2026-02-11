@@ -1,225 +1,249 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    TablePagination,
-    Chip,
-    Box,
-    Typography,
-    IconButton,
-    CircularProgress,
-    Alert
-} from '@mui/material';
-import {
-    Edit,
-    Delete,
-    Email,
-    Phone,
-    Person
-} from '@mui/icons-material';
-import { leadAPI } from '../services/api';
-import toast from 'react-hot-toast';
+import { auth } from '../services/auth';
+import api from '../services/api';
+import LeadForm from './LeadForm';
+import LeadDetails from './LeadDetails';
 
-const statusColors = {
-    'New': { bg: '#dbeafe', text: '#1e40af' },
-    'Contacted': { bg: '#fef3c7', text: '#92400e' },
-    'Converted': { bg: '#d1fae5', text: '#065f46' },
-    'Lost': { bg: '#fee2e2', text: '#991b1b' }
-};
+const LeadList = () => {
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [selectedLead, setSelectedLead] = useState(null);
+  
+  // Get user from localStorage
+  const user = auth.getCurrentUser();
+  const isAdmin = auth.isAdmin();
 
-const sourceIcons = {
-    'Website': '🌐',
-    'LinkedIn': '💼',
-    'Referral': '👥',
-    'Email Campaign': '📧',
-    'Social': '📱',
-    'Other': '📊'
-};
+  useEffect(() => {
+    fetchLeads();
+  }, []);
 
-const LeadList = ({ 
-    leads, 
-    loading, 
-    error, 
-    onEdit, 
-    onDelete, 
-    onView,
-    filters = {},
-    searchTerm = ''
-}) => {
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
-
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
-
-    if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                <CircularProgress />
-            </Box>
-        );
+  const fetchLeads = async () => {
+    try {
+      const response = await api.get('/leads');
+      setLeads(response.data);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (error) {
-        return (
-            <Alert severity="error" sx={{ m: 2 }}>
-                Error loading leads: {error}
-            </Alert>
-        );
+  const handleAddLead = () => {
+    setSelectedLead(null);
+    setShowForm(true);
+  };
+
+  const handleEditLead = (lead) => {
+    setSelectedLead(lead);
+    setShowForm(true);
+  };
+
+  const handleDeleteLead = async (id) => {
+    if (!window.confirm('Delete this lead?')) return;
+    try {
+      await api.delete(`/leads/${id}`);
+      fetchLeads();
+    } catch (error) {
+      console.error('Error:', error);
     }
+  };
 
-    const filteredLeads = leads.filter(lead => {
-        if (!searchTerm) return true;
-        const term = searchTerm.toLowerCase();
-        return (
-            lead.name?.toLowerCase().includes(term) ||
-            lead.email?.toLowerCase().includes(term) ||
-            lead.company?.toLowerCase().includes(term)
-        );
-    });
+  const handleViewDetails = (lead) => {
+    setSelectedLead(lead);
+    setShowDetails(true);
+  };
 
-    const displayedLeads = filteredLeads.slice(
-        page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage
-    );
+  const handleStatusChange = async (id, newStatus) => {
+    if (!isAdmin) {
+      alert('Only admins can change status');
+      return;
+    }
+    try {
+      await api.put(`/leads/${id}`, { status: newStatus });
+      fetchLeads();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
 
-    return (
-        <>
-            <TableContainer>
-                <Table>
-                    <TableHead>
-                        <TableRow sx={{ bgcolor: '#f8fafc' }}>
-                            <TableCell><strong>Name</strong></TableCell>
-                            <TableCell><strong>Email</strong></TableCell>
-                            <TableCell><strong>Source</strong></TableCell>
-                            <TableCell><strong>Status</strong></TableCell>
-                            <TableCell><strong>Last Contact</strong></TableCell>
-                            <TableCell><strong>Actions</strong></TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {displayedLeads.map((lead) => (
-                            <TableRow 
-                                key={lead._id}
-                                hover
-                                sx={{ cursor: 'pointer' }}
-                                onClick={() => onView && onView(lead)}
-                            >
-                                <TableCell>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                        <Box
-                                            sx={{
-                                                width: 40,
-                                                height: 40,
-                                                borderRadius: '50%',
-                                                bgcolor: '#3b82f6',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                color: 'white',
-                                                fontWeight: 'bold'
-                                            }}
-                                        >
-                                            {lead.name?.charAt(0) || <Person />}
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="body1" fontWeight="medium">
-                                                {lead.name}
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary">
-                                                {lead.company}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                </TableCell>
-                                
-                                <TableCell>
-                                    <Typography>{lead.email}</Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {lead.phone}
-                                    </Typography>
-                                </TableCell>
-                                
-                                <TableCell>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <Typography variant="h6">
-                                            {sourceIcons[lead.source] || '📊'}
-                                        </Typography>
-                                        <Typography>{lead.source}</Typography>
-                                    </Box>
-                                </TableCell>
-                                
-                                <TableCell>
-                                    <Chip
-                                        label={lead.status}
-                                        size="small"
-                                        sx={{
-                                            bgcolor: statusColors[lead.status]?.bg,
-                                            color: statusColors[lead.status]?.text,
-                                            fontWeight: 'medium'
-                                        }}
-                                    />
-                                </TableCell>
-                                
-                                <TableCell>
-                                    <Typography>
-                                        {new Date(lead.lastContact).toLocaleDateString()}
-                                    </Typography>
-                                </TableCell>
-                                
-                                <TableCell onClick={(e) => e.stopPropagation()}>
-                                    <Box sx={{ display: 'flex', gap: 1 }}>
-                                        <IconButton 
-                                            size="small"
-                                            onClick={() => window.location.href = `mailto:${lead.email}`}
-                                        >
-                                            <Email fontSize="small" />
-                                        </IconButton>
-                                        {onEdit && (
-                                            <IconButton 
-                                                size="small"
-                                                onClick={() => onEdit(lead)}
-                                            >
-                                                <Edit fontSize="small" />
-                                            </IconButton>
-                                        )}
-                                        {onDelete && (
-                                            <IconButton 
-                                                size="small"
-                                                onClick={() => onDelete(lead)}
-                                            >
-                                                <Delete fontSize="small" />
-                                            </IconButton>
-                                        )}
-                                    </Box>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-            
-            <TablePagination
-                rowsPerPageOptions={[5, 10, 25]}
-                component="div"
-                count={filteredLeads.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
+  const handleFormSubmit = async (formData) => {
+    try {
+      if (selectedLead) {
+        await api.put(`/leads/${selectedLead._id}`, formData);
+      } else {
+        await api.post('/leads', formData);
+      }
+      setShowForm(false);
+      fetchLeads();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'new': return '#007bff';
+      case 'contacted': return '#ffc107';
+      case 'converted': return '#28a745';
+      case 'lost': return '#dc3545';
+      default: return '#6c757d';
+    }
+  };
+
+  if (loading) return <div style={styles.loading}>Loading leads...</div>;
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.header}>
+        <h1>Leads Management</h1>
+        <div style={styles.userInfo}>
+          <span style={styles.role}>
+            Logged in as: <strong>{user?.username}</strong> ({user?.role})
+          </span>
+          {isAdmin && (
+            <button onClick={handleAddLead} style={styles.addButton}>
+              + Add New Lead
+            </button>
+          )}
+          <button onClick={auth.logout} style={styles.logoutButton}>
+            Logout
+          </button>
+        </div>
+      </div>
+
+      <div style={styles.tableContainer}>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.th}>Name</th>
+              <th style={styles.th}>Email</th>
+              <th style={styles.th}>Phone</th>
+              <th style={styles.th}>Source</th>
+              <th style={styles.th}>Status</th>
+              <th style={styles.th}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {leads.length === 0 ? (
+              <tr>
+                <td colSpan="6" style={styles.noData}>No leads found</td>
+              </tr>
+            ) : (
+              leads.map(lead => (
+                <tr key={lead._id}>
+                  <td style={styles.td}>{lead.name}</td>
+                  <td style={styles.td}>{lead.email}</td>
+                  <td style={styles.td}>{lead.phone || '-'}</td>
+                  <td style={styles.td}>{lead.source}</td>
+                  <td style={styles.td}>
+                    {isAdmin ? (
+                      <select 
+                        value={lead.status}
+                        onChange={(e) => handleStatusChange(lead._id, e.target.value)}
+                        style={{
+                          ...styles.statusSelect,
+                          backgroundColor: getStatusColor(lead.status),
+                          color: 'white'
+                        }}
+                      >
+                        <option value="new">New</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="converted">Converted</option>
+                        <option value="lost">Lost</option>
+                      </select>
+                    ) : (
+                      <span style={{
+                        ...styles.statusBadge,
+                        backgroundColor: getStatusColor(lead.status)
+                      }}>
+                        {lead.status}
+                      </span>
+                    )}
+                  </td>
+                  <td style={styles.td}>
+                    <button 
+                      onClick={() => handleViewDetails(lead)}
+                      style={styles.viewButton}
+                    >
+                      View
+                    </button>
+                    
+                    {isAdmin && (
+                      <>
+                        <button 
+                          onClick={() => handleEditLead(lead)}
+                          style={styles.editButton}
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteLead(lead._id)}
+                          style={styles.deleteButton}
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {showForm && (
+        <div style={styles.modal}>
+          <div style={styles.modalContent}>
+            <LeadForm 
+              lead={selectedLead}
+              onSubmit={handleFormSubmit}
+              onCancel={() => setShowForm(false)}
             />
-        </>
-    );
+          </div>
+        </div>
+      )}
+
+      {showDetails && selectedLead && (
+        <div style={styles.modal}>
+          <div style={styles.modalContent}>
+            <LeadDetails 
+              lead={selectedLead}
+              onClose={() => {
+                setShowDetails(false);
+                setSelectedLead(null);
+              }}
+              onUpdate={fetchLeads}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const styles = {
+  container: { padding: '20px', maxWidth: '1200px', margin: '0 auto' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
+  userInfo: { display: 'flex', alignItems: 'center', gap: '15px' },
+  role: { padding: '5px 10px', backgroundColor: '#e9ecef', borderRadius: '4px' },
+  addButton: { padding: '10px 20px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' },
+  logoutButton: { padding: '10px 20px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' },
+  tableContainer: { backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', overflow: 'auto' },
+  table: { width: '100%', borderCollapse: 'collapse' },
+  th: { padding: '12px', textAlign: 'left', backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6' },
+  td: { padding: '12px', borderBottom: '1px solid #dee2e6' },
+  statusSelect: { padding: '5px 10px', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer' },
+  statusBadge: { padding: '5px 10px', borderRadius: '4px', color: 'white', display: 'inline-block' },
+  viewButton: { padding: '5px 10px', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '5px' },
+  editButton: { padding: '5px 10px', backgroundColor: '#ffc107', color: 'black', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '5px' },
+  deleteButton: { padding: '5px 10px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' },
+  modal: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
+  modalContent: { backgroundColor: 'white', padding: '30px', borderRadius: '8px', maxWidth: '600px', width: '90%', maxHeight: '80vh', overflow: 'auto' },
+  loading: { textAlign: 'center', padding: '40px', fontSize: '18px', color: '#666' },
+  noData: { textAlign: 'center', padding: '40px', color: '#666', fontStyle: 'italic' }
 };
 
 export default LeadList;

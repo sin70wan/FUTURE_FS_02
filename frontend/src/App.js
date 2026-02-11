@@ -1,44 +1,32 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import { Toaster } from 'react-hot-toast';
-
-// Import pages
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import Leads from './pages/Leads';
-import LeadDetail from './pages/LeadDetail';
+import { auth } from './services/auth';
 
-// Create theme
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#667eea',
-    },
-  },
-});
+// Simple protected route component
+const ProtectedRoute = ({ children }) => {
+  return auth.isAuthenticated() ? children : <Navigate to="/login" />;
+};
 
 function App() {
-  console.log('🚀 App component loaded');
-  
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Toaster position="top-right" />
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          
-          {/* TEMPORARILY remove ProtectedRoute */}
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/leads" element={<Leads />} />
-          <Route path="/leads/:id" element={<LeadDetail />} />
-          
-          <Route path="/" element={<Login />} />
-        </Routes>
-      </Router>
-    </ThemeProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route path="/" element={<Navigate to="/dashboard" />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

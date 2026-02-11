@@ -1,174 +1,137 @@
 import React, { useState } from 'react';
-import {
-  Container,
-  Paper,
-  TextField,
-  Button,
-  Typography,
-  Box,
-  Avatar,
-  CircularProgress,
-  Alert
-} from '@mui/material';
-import { LockOutlined } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import { useNavigate, Link } from 'react-router-dom';
+import { auth } from '../services/auth';
 
 const Login = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-    setError('');
-  };
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+        
+        const result = await auth.login(email, password);
+        
+        if (result.success) {
+            navigate('/dashboard');
+        } else {
+            setError(result.error);
+        }
+        setLoading(false);
+    };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError('');
-
-  console.log('🔐 Login attempt with:', formData.email);
-
-  // SIMPLE VALIDATION - NO BACKEND CALL
-  setTimeout(() => {
-    if (formData.email === 'admin@nexuscrm.com' && formData.password === 'admin123') {
-      console.log('✅ Valid credentials');
-      
-      // Create mock token
-      const mockToken = 'demo-token-' + Date.now();
-      
-      console.log('🔄 Setting token:', mockToken);
-      localStorage.setItem('token', mockToken);
-      localStorage.setItem('user', JSON.stringify({
-        id: 'demo-id',
-        name: 'Admin User',
-        email: formData.email,
-        role: 'admin'
-      }));
-      
-      console.log('📋 After setting - Token:', localStorage.getItem('token'));
-      console.log('📋 After setting - User:', localStorage.getItem('user'));
-      
-      toast.success('Login successful!');
-      
-      // Use window.location to force navigation
-      console.log('🚀 Navigating to /dashboard');
-      window.location.href = '/dashboard';
-      
-    } else {
-      console.log('❌ Invalid credentials');
-      setError('Invalid credentials. Use: admin@nexuscrm.com / admin123');
-      toast.error('Login failed');
-    }
-    setLoading(false);
-  }, 1000);
+    return (
+        <div style={styles.container}>
+            <div style={styles.card}>
+                <h2 style={styles.title}>Mini CRM Login</h2>
+                
+                {error && <div style={styles.error}>{error}</div>}
+                
+                <form onSubmit={handleSubmit} style={styles.form}>
+                    <div style={styles.inputGroup}>
+                        <label>Email</label>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            style={styles.input}
+                            placeholder="admin@crm.com"
+                        />
+                    </div>
+                    
+                    <div style={styles.inputGroup}>
+                        <label>Password</label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            style={styles.input}
+                            placeholder="••••••••"
+                        />
+                    </div>
+                    
+                    <button 
+                        type="submit" 
+                        disabled={loading}
+                        style={styles.button}
+                    >
+                        {loading ? 'Logging in...' : 'Login'}
+                    </button>
+                </form>
+                
+                <div style={styles.link}>
+                    Don't have an account? <Link to="/register">Register here</Link>
+                </div>
+            </div>
+        </div>
+    );
 };
 
-  const handleDemoLogin = () => {
-    setFormData({
-      email: 'admin@nexuscrm.com',
-      password: 'admin123'
-    });
-  };
-
-  return (
-    <Container component="main" maxWidth="xs">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Avatar sx={{ m: 1, bgcolor: 'primary.main' }}>
-          <LockOutlined />
-        </Avatar>
-        <Typography component="h1" variant="h5">
-          NexusCRM
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Client Lead Management System
-        </Typography>
-        
-        <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
-          <Typography component="h2" variant="h6" align="center" gutterBottom>
-            Admin Login
-          </Typography>
-          
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-          
-          <form onSubmit={handleSubmit}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Email Address"
-              name="email"
-              autoComplete="email"
-              autoFocus
-              value={formData.email}
-              onChange={handleChange}
-              disabled={loading}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Password"
-              type="password"
-              id="password"
-              autoComplete="current-password"
-              value={formData.password}
-              onChange={handleChange}
-              disabled={loading}
-            />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2, py: 1.5 }}
-              disabled={loading}
-            >
-              {loading ? <CircularProgress size={24} /> : 'Sign In'}
-            </Button>
-          </form>
-          
-          <Box sx={{ textAlign: 'center', mt: 2 }}>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={handleDemoLogin}
-              disabled={loading}
-              sx={{ mb: 2 }}
-            >
-              Use Demo Admin Account
-            </Button>
-            
-            <Typography variant="body2" color="text.secondary">
-              Default admin: admin@nexuscrm.com / admin123
-            </Typography>
-          </Box>
-        </Paper>
-      </Box>
-    </Container>
-  );
+const styles = {
+    container: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        backgroundColor: '#f5f5f5'
+    },
+    card: {
+        backgroundColor: 'white',
+        padding: '40px',
+        borderRadius: '8px',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+        width: '100%',
+        maxWidth: '400px'
+    },
+    title: {
+        marginBottom: '30px',
+        textAlign: 'center',
+        color: '#333'
+    },
+    form: {
+        display: 'flex',
+        flexDirection: 'column'
+    },
+    inputGroup: {
+        marginBottom: '20px'
+    },
+    input: {
+        width: '100%',
+        padding: '10px',
+        border: '1px solid #ddd',
+        borderRadius: '4px',
+        fontSize: '16px',
+        marginTop: '5px'
+    },
+    button: {
+        padding: '12px',
+        backgroundColor: '#1976d2',
+        color: 'white',
+        border: 'none',
+        borderRadius: '4px',
+        fontSize: '16px',
+        cursor: 'pointer',
+        marginTop: '10px'
+    },
+    error: {
+        backgroundColor: '#ffebee',
+        color: '#c62828',
+        padding: '10px',
+        borderRadius: '4px',
+        marginBottom: '20px',
+        textAlign: 'center'
+    },
+    link: {
+        marginTop: '20px',
+        textAlign: 'center',
+        color: '#666'
+    }
 };
 
 export default Login;

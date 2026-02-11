@@ -1,186 +1,184 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    Button,
-    MenuItem,
-    Box,
-    Typography,
-    Alert
-} from '@mui/material';
 
-const LeadForm = ({ open, onClose, onSubmit, initialData, mode = 'create' }) => {
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        company: '',
-        source: 'Website',
-        status: 'New',
-        location: ''
+const LeadForm = ({ lead, onSubmit, onCancel }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    source: 'website',
+    status: 'new'
+  });
+
+  useEffect(() => {
+    if (lead) {
+      setFormData({
+        name: lead.name || '',
+        email: lead.email || '',
+        phone: lead.phone || '',
+        source: lead.source || 'website',
+        status: lead.status || 'new'
+      });
+    }
+  }, [lead]);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
     });
-    
-    const [errors, setErrors] = useState({});
+  };
 
-    useEffect(() => {
-        if (initialData) {
-            setFormData({
-                name: initialData.name || '',
-                email: initialData.email || '',
-                phone: initialData.phone || '',
-                company: initialData.company || '',
-                source: initialData.source || 'Website',
-                status: initialData.status || 'New',
-                location: initialData.location || ''
-            });
-        } else {
-            setFormData({
-                name: '',
-                email: '',
-                phone: '',
-                company: '',
-                source: 'Website',
-                status: 'New',
-                location: ''
-            });
-        }
-        setErrors({});
-    }, [initialData, open]);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
 
-    const validateForm = () => {
-        const newErrors = {};
-        
-        if (!formData.name.trim()) {
-            newErrors.name = 'Name is required';
-        }
-        
-        if (!formData.email.trim()) {
-            newErrors.email = 'Email is required';
-        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = 'Email is invalid';
-        }
-        
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
+  return (
+    <div>
+      <h2 style={styles.title}>
+        {lead ? 'Edit Lead' : 'Add New Lead'}
+      </h2>
+      
+      <form onSubmit={handleSubmit} style={styles.form}>
+        <div style={styles.formGroup}>
+          <label style={styles.label}>Name *</label>
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+            style={styles.input}
+            placeholder="John Doe"
+          />
+        </div>
 
-    const handleSubmit = () => {
-        if (validateForm()) {
-            onSubmit(formData);
-            onClose();
-        }
-    };
+        <div style={styles.formGroup}>
+          <label style={styles.label}>Email *</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            style={styles.input}
+            placeholder="john@example.com"
+          />
+        </div>
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-        
-        // Clear error when user starts typing
-        if (errors[name]) {
-            setErrors(prev => ({
-                ...prev,
-                [name]: ''
-            }));
-        }
-    };
+        <div style={styles.formGroup}>
+          <label style={styles.label}>Phone</label>
+          <input
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            style={styles.input}
+            placeholder="+1 234 567 8900"
+          />
+        </div>
 
-    return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-            <DialogTitle>
-                {mode === 'edit' ? 'Edit Lead' : 'Add New Lead'}
-            </DialogTitle>
-            <DialogContent>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-                    <TextField
-                        name="name"
-                        label="Full Name *"
-                        value={formData.name}
-                        onChange={handleChange}
-                        error={!!errors.name}
-                        helperText={errors.name}
-                        fullWidth
-                    />
-                    
-                    <TextField
-                        name="email"
-                        label="Email *"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        error={!!errors.email}
-                        helperText={errors.email}
-                        fullWidth
-                    />
-                    
-                    <TextField
-                        name="phone"
-                        label="Phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        fullWidth
-                    />
-                    
-                    <TextField
-                        name="company"
-                        label="Company"
-                        value={formData.company}
-                        onChange={handleChange}
-                        fullWidth
-                    />
-                    
-                    <TextField
-                        name="location"
-                        label="Location"
-                        value={formData.location}
-                        onChange={handleChange}
-                        fullWidth
-                    />
-                    
-                    <TextField
-                        select
-                        name="source"
-                        label="Source"
-                        value={formData.source}
-                        onChange={handleChange}
-                        fullWidth
-                    >
-                        <MenuItem value="Website">Website</MenuItem>
-                        <MenuItem value="LinkedIn">LinkedIn</MenuItem>
-                        <MenuItem value="Referral">Referral</MenuItem>
-                        <MenuItem value="Email Campaign">Email Campaign</MenuItem>
-                        <MenuItem value="Social">Social</MenuItem>
-                        <MenuItem value="Other">Other</MenuItem>
-                    </TextField>
-                    
-                    <TextField
-                        select
-                        name="status"
-                        label="Status"
-                        value={formData.status}
-                        onChange={handleChange}
-                        fullWidth
-                    >
-                        <MenuItem value="New">New</MenuItem>
-                        <MenuItem value="Contacted">Contacted</MenuItem>
-                        <MenuItem value="Converted">Converted</MenuItem>
-                        <MenuItem value="Lost">Lost</MenuItem>
-                    </TextField>
-                </Box>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={handleSubmit} variant="contained">
-                    {mode === 'edit' ? 'Update' : 'Create'} Lead
-                </Button>
-            </DialogActions>
-        </Dialog>
-    );
+        <div style={styles.formGroup}>
+          <label style={styles.label}>Source</label>
+          <select
+            name="source"
+            value={formData.source}
+            onChange={handleChange}
+            style={styles.select}
+          >
+            <option value="website">Website</option>
+            <option value="referral">Referral</option>
+            <option value="social">Social Media</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div style={styles.formGroup}>
+          <label style={styles.label}>Status</label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            style={styles.select}
+          >
+            <option value="new">New</option>
+            <option value="contacted">Contacted</option>
+            <option value="converted">Converted</option>
+            <option value="lost">Lost</option>
+          </select>
+        </div>
+
+        <div style={styles.buttonGroup}>
+          <button type="submit" style={styles.submitButton}>
+            {lead ? 'Update Lead' : 'Create Lead'}
+          </button>
+          <button type="button" onClick={onCancel} style={styles.cancelButton}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+const styles = {
+  title: {
+    marginBottom: '20px',
+    color: '#333'
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column'
+  },
+  formGroup: {
+    marginBottom: '15px'
+  },
+  label: {
+    display: 'block',
+    marginBottom: '5px',
+    fontWeight: '500',
+    color: '#555'
+  },
+  input: {
+    width: '100%',
+    padding: '8px 12px',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    fontSize: '14px'
+  },
+  select: {
+    width: '100%',
+    padding: '8px 12px',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    fontSize: '14px',
+    backgroundColor: 'white'
+  },
+  buttonGroup: {
+    display: 'flex',
+    gap: '10px',
+    marginTop: '20px'
+  },
+  submitButton: {
+    flex: 1,
+    padding: '10px',
+    backgroundColor: '#007bff',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px'
+  },
+  cancelButton: {
+    flex: 1,
+    padding: '10px',
+    backgroundColor: '#6c757d',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px'
+  }
 };
 
 export default LeadForm;
