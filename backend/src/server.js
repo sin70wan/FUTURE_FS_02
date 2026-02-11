@@ -4,7 +4,7 @@ require('dotenv').config();
 
 const connectDB = require('./config/db');
 const leadRoutes = require('./routes/leadRoutes');
-const authRoutes = require('./routes/authRoutes'); // Add this
+const authRoutes = require('./routes/authRoutes');
 
 // Connect to database
 connectDB();
@@ -16,7 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/api/auth', authRoutes); // Add this line
+app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadRoutes);
 
 // Basic route
