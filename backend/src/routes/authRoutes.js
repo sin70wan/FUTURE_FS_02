@@ -125,5 +125,52 @@ router.post('/logout', (req, res) => {
     message: 'Logged out successfully' 
   });
 });
+// @desc    Register new user (public - anyone can sign up)
+// @route   POST /api/auth/register
+// @access  Public
+router.post('/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    // Check if user exists
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    if (existingUser) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'User already exists' 
+      });
+    }
+
+    // Create new user (default role: 'user')
+    const user = new User({
+      username,
+      email,
+      password,
+      role: 'user' // Always create as regular user
+    });
+
+    await user.save();
+
+    // Generate token
+    const token = generateToken(user);
+
+    res.status(201).json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Register error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error' 
+    });
+  }
+});
 
 module.exports = router;
