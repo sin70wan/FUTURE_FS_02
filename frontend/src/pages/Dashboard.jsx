@@ -1,419 +1,325 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Grid,
-  Paper,
-  Typography,
   Box,
+  Typography,
+  Paper,
+  Grid,
   Card,
   CardContent,
+  Button,
+  Avatar,
+  Chip,
+  LinearProgress,
   IconButton,
-  TextField,
-  InputAdornment,
-  CircularProgress,
-  Alert,
-  Button
+  Tooltip
 } from '@mui/material';
-import {
-  Search,
-  Add,
-  TrendingUp,
-  Email,
-  Phone,
-  PersonAdd
-} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import {
+  People as PeopleIcon,
+  AdminPanelSettings as AdminIcon,
+  Person as PersonIcon,
+  Refresh as RefreshIcon,
+  Add as AddIcon,
+  TrendingUp as TrendingUpIcon,
+  ContactMail as ContactIcon,
+  CheckCircle as ConvertedIcon,
+  Cancel as LostIcon
+} from '@mui/icons-material';
 import { auth } from '../services/auth';
-import Layout from '../components/Layout';
-import toast from 'react-hot-toast';
+import { leadService } from '../services/leadService';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [leads, setLeads] = useState([]);
+  const [user, setUser] = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const user = auth.getCurrentUser();
+  const [recentLeads, setRecentLeads] = useState([]);
 
   useEffect(() => {
-    fetchLeads();
+    const userData = auth.getCurrentUser();
+    setUser(userData);
+    fetchDashboardData();
   }, []);
 
-  const fetchLeads = async () => {
+  const fetchDashboardData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await api.get('/leads');
-      const data = response.data;
-      setLeads(data);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load data');
-      toast.error('Failed to load dashboard');
+      const [statsData, leadsData] = await Promise.all([
+        leadService.getStats(),
+        leadService.getAllLeads({ limit: 5 })
+      ]);
+      setStats(statsData);
+      setRecentLeads(leadsData.slice(0, 5));
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Calculate stats from leads data
-  const getStats = () => {
-    const totalLeads = leads.length;
-    const newLeads = leads.filter(lead => lead.status === 'new').length;
-    const contactedLeads = leads.filter(lead => lead.status === 'contacted').length;
-    const convertedLeads = leads.filter(lead => lead.status === 'converted').length;
-    const lostLeads = leads.filter(lead => lead.status === 'lost').length;
-    
-    return {
-      totalLeads,
-      newLeads,
-      contactedLeads,
-      convertedLeads,
-      lostLeads
-    };
+  const isAdmin = auth.isAdmin();
+
+  const getStatusColor = (status) => {
+    const colors = { new: 'info', contacted: 'warning', converted: 'success', lost: 'error' };
+    return colors[status] || 'default';
   };
 
-  // Get recent leads (last 5)
-  const getRecentLeads = () => {
-    return leads
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 5);
-  };
-
-  const handleAddLead = () => {
-    navigate('/leads?action=add');
-  };
-
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const filteredLeads = leads.filter(lead => 
-    lead.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const stats = getStats();
-  const recentLeads = getRecentLeads();
-
-  if (loading) {
-    return (
-      <Layout title="Dashboard Overview">
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-          <CircularProgress />
-        </Box>
-      </Layout>
-    );
-  }
-
-  if (error) {
-    return (
-      <Layout title="Dashboard Overview">
-        <Alert severity="error" sx={{ m: 2 }}>
-          {error}
-        </Alert>
-        <Button onClick={fetchLeads} variant="outlined" sx={{ m: 2 }}>
-          Retry
-        </Button>
-      </Layout>
-    );
-  }
+  const statCards = [
+    { label: 'Total Leads', value: stats?.total || 0, icon: <PeopleIcon />, color: '#667eea' },
+    { label: 'New Leads', value: stats?.stats?.find(s => s._id === 'new')?.count || 0, icon: <ContactIcon />, color: '#4299e1' },
+    { label: 'Contacted', value: stats?.stats?.find(s => s._id === 'contacted')?.count || 0, icon: <TrendingUpIcon />, color: '#ed8936' },
+    { label: 'Converted', value: stats?.stats?.find(s => s._id === 'converted')?.count || 0, icon: <ConvertedIcon />, color: '#48bb78' },
+    { label: 'Lost', value: stats?.stats?.find(s => s._id === 'lost')?.count || 0, icon: <LostIcon />, color: '#f56565' },
+  ];
 
   return (
-    <Layout title="Dashboard Overview">
-      {/* Welcome Banner */}
-      <Paper sx={{ p: 3, mb: 3, bgcolor: 'primary.main', color: 'white' }}>
-        <Typography variant="h5" gutterBottom>
-          Welcome back, {user?.username || 'User'}!
-        </Typography>
-        <Typography variant="body2">
-          You have {stats.totalLeads} total leads. {stats.newLeads} new leads need attention.
-        </Typography>
+    <Box>
+      {/* Header with Gradient */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 4,
+          mb: 4,
+          borderRadius: 4,
+          background: 'linear-gradient(145deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+      >
+        <Box sx={{ position: 'relative', zIndex: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Avatar
+                sx={{
+                  width: 80,
+                  height: 80,
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  border: '3px solid white',
+                  mr: 3
+                }}
+              >
+                {user?.username?.charAt(0)?.toUpperCase() || 'U'}
+              </Avatar>
+              <Box>
+                <Typography variant="h3" fontWeight="bold" gutterBottom>
+                  Welcome back, {user?.username || 'User'}!
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Chip
+                    label={user?.email}
+                    size="small"
+                    sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}
+                  />
+                  <Chip
+                    icon={isAdmin ? <AdminIcon /> : <PersonIcon />}
+                    label={isAdmin ? 'Administrator' : 'Team Member'}
+                    size="small"
+                    sx={{
+                      bgcolor: isAdmin ? 'rgba(236, 72, 153, 0.3)' : 'rgba(255,255,255,0.2)',
+                      color: 'white',
+                      '& .MuiChip-icon': { color: 'white' }
+                    }}
+                  />
+                </Box>
+              </Box>
+            </Box>
+            <Tooltip title="Refresh Data">
+              <IconButton
+                onClick={fetchDashboardData}
+                sx={{
+                  color: 'white',
+                  bgcolor: 'rgba(255,255,255,0.1)',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }
+                }}
+              >
+                <RefreshIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
+
+        {/* Background decoration */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '50%',
+            height: '100%',
+            background: 'url("data:image/svg+xml,%3Csvg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M10 50c0-22.1 17.9-40 40-40s40 17.9 40 40-17.9 40-40 40-40-17.9-40-40z" fill="%23ffffff" fill-opacity="0.05"/%3E%3C/svg%3E") repeat',
+            opacity: 0.1
+          }}
+        />
       </Paper>
 
-      {/* Top Bar */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <TextField
-          placeholder="Search leads, companies..."
-          variant="outlined"
-          size="small"
-          value={searchTerm}
-          onChange={handleSearch}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ width: 300 }}
-        />
-        {auth.isAdmin() && (
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={handleAddLead}
-          >
-            Add New Lead
-          </Button>
-        )}
-      </Box>
-
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom variant="body2">
-                Total Leads
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="h4">{stats.totalLeads}</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <TrendingUp sx={{ color: '#10b981', mr: 1 }} />
-                  <Typography color="#10b981" variant="body2">
-                    Active
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom variant="body2">
-                New Leads
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="h4">{stats.newLeads}</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <TrendingUp sx={{ color: '#10b981', mr: 1 }} />
-                  <Typography color="#10b981" variant="body2">
-                    Need action
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom variant="body2">
-                Contacted
-              </Typography>
-              <Typography variant="h4">{stats.contactedLeads}</Typography>
-              <Typography variant="caption" color="textSecondary">
-                In progress
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom variant="body2">
-                Converted
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="h4">{stats.convertedLeads}</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <TrendingUp sx={{ color: '#10b981', mr: 1 }} />
-                  <Typography color="#10b981" variant="body2">
-                    Success
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Main Content */}
-      <Grid container spacing={3}>
-        {/* Recent Leads */}
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h6">Recent Leads</Typography>
-              <Button
-                variant="text"
-                onClick={() => navigate('/leads')}
-              >
-                View All ({leads.length})
-              </Button>
-            </Box>
-            
-            {recentLeads.length > 0 ? (
-              <Box>
-                {recentLeads.map((lead) => (
-                  <Box
-                    key={lead._id}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      py: 2,
-                      px: 1,
-                      borderBottom: '1px solid',
-                      borderColor: 'divider',
-                      '&:last-child': { borderBottom: 'none' },
-                      '&:hover': { bgcolor: 'action.hover' },
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => navigate(`/leads/${lead._id}`)}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Box
-                        sx={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: '50%',
-                          bgcolor: lead.status === 'new' ? '#3b82f6' :
-                                   lead.status === 'contacted' ? '#f59e0b' :
-                                   lead.status === 'converted' ? '#10b981' : '#6b7280',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        {lead.name?.charAt(0)?.toUpperCase() || 'L'}
-                      </Box>
+      {loading ? (
+        <Box sx={{ width: '100%', mb: 4 }}>
+          <LinearProgress />
+        </Box>
+      ) : (
+        <>
+          {/* Stats Cards */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {statCards.map((stat, index) => (
+              <Grid item xs={12} sm={6} md={4} lg={2.4} key={index}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    transition: 'transform 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-5px)',
+                      boxShadow: '0 8px 30px rgba(0,0,0,0.12)'
+                    }
+                  }}
+                >
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <Box>
-                        <Typography variant="body1" fontWeight="medium">
-                          {lead.name}
+                        <Typography color="text.secondary" variant="body2" gutterBottom>
+                          {stat.label}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {lead.email}
+                        <Typography variant="h4" fontWeight="bold">
+                          {stat.value}
                         </Typography>
                       </Box>
-                    </Box>
-                    
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        {lead.source}
-                      </Typography>
-                      <Box
+                      <Avatar
                         sx={{
-                          px: 1.5,
-                          py: 0.5,
-                          borderRadius: 1,
-                          bgcolor: lead.status === 'new' ? '#dbeafe' : 
-                                   lead.status === 'contacted' ? '#fef3c7' : 
-                                   lead.status === 'converted' ? '#d1fae5' : '#f3f4f6',
-                          color: lead.status === 'new' ? '#1e40af' : 
-                                 lead.status === 'contacted' ? '#92400e' : 
-                                 lead.status === 'converted' ? '#065f46' : '#4b5563',
-                          fontSize: '0.75rem',
-                          fontWeight: 'medium',
-                          textTransform: 'capitalize'
+                          bgcolor: stat.color,
+                          width: 56,
+                          height: 56,
+                          boxShadow: `0 8px 16px ${stat.color}40`
                         }}
                       >
-                        {lead.status}
-                      </Box>
+                        {stat.icon}
+                      </Avatar>
                     </Box>
-                  </Box>
-                ))}
-              </Box>
-            ) : (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Typography color="text.secondary" gutterBottom>
-                  No leads found.
-                </Typography>
-                {auth.isAdmin() && (
-                  <Button
-                    variant="contained"
-                    startIcon={<Add />}
-                    onClick={handleAddLead}
-                    sx={{ mt: 2 }}
-                  >
-                    Add Your First Lead
-                  </Button>
-                )}
-              </Box>
-            )}
-          </Paper>
-        </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
 
-        {/* Quick Actions */}
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>Quick Actions</Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<Email />}
-                  onClick={() => navigate('/leads')}
-                  sx={{ py: 1.5, justifyContent: 'flex-start' }}
-                >
-                  Email
-                </Button>
-              </Grid>
-              <Grid item xs={6}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<Phone />}
-                  onClick={() => navigate('/leads')}
-                  sx={{ py: 1.5, justifyContent: 'flex-start' }}
-                >
-                  Call
-                </Button>
-              </Grid>
-              {auth.isAdmin() && (
-                <Grid item xs={6}>
+          {/* Quick Actions & Recent Leads */}
+          <Grid container spacing={3}>
+            {/* Quick Actions */}
+            <Grid item xs={12} md={4}>
+              <Card sx={{ borderRadius: 3, height: '100%' }}>
+                <CardContent>
+                  <Typography variant="h6" fontWeight="bold" gutterBottom>
+                    Quick Actions
+                  </Typography>
+                  
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => navigate('/leads')}
+                    sx={{
+                      mb: 2,
+                      py: 1.5,
+                      borderRadius: 2,
+                      background: 'linear-gradient(145deg, #667eea 0%, #764ba2 100%)',
+                      '&:hover': {
+                        background: 'linear-gradient(145deg, #5a6fd6 0%, #6a4392 100%)',
+                      }
+                    }}
+                  >
+                    Add New Lead
+                  </Button>
+                  
                   <Button
                     fullWidth
                     variant="outlined"
-                    startIcon={<PersonAdd />}
-                    onClick={handleAddLead}
-                    sx={{ py: 1.5, justifyContent: 'flex-start' }}
+                    startIcon={<PeopleIcon />}
+                    onClick={() => navigate('/leads')}
+                    sx={{ py: 1.5, borderRadius: 2 }}
                   >
-                    Add Lead
+                    View All Leads
                   </Button>
-                </Grid>
-              )}
-              <Grid item xs={auth.isAdmin() ? 6 : 12}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  onClick={() => navigate('/leads')}
-                  sx={{ py: 1.5 }}
-                >
-                  View All Leads
-                </Button>
-              </Grid>
+
+                  {isAdmin && (
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      color="secondary"
+                      startIcon={<AdminIcon />}
+                      onClick={() => navigate('/admin')}
+                      sx={{ mt: 2, py: 1.5, borderRadius: 2 }}
+                    >
+                      Admin Panel
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
             </Grid>
 
-            {/* Recent Activity Summary */}
-            <Box sx={{ mt: 3 }}>
-              <Typography variant="subtitle2" gutterBottom color="text.secondary">
-                Summary
-              </Typography>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2">Conversion Rate</Typography>
-                <Typography variant="body2" fontWeight="medium">
-                  {stats.totalLeads > 0 
-                    ? Math.round((stats.convertedLeads / stats.totalLeads) * 100) 
-                    : 0}%
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2">Lost Leads</Typography>
-                <Typography variant="body2" fontWeight="medium" color="error">
-                  {stats.lostLeads || 0}
-                </Typography>
-              </Box>
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
-    </Layout>
+            {/* Recent Leads */}
+            <Grid item xs={12} md={8}>
+              <Card sx={{ borderRadius: 3 }}>
+                <CardContent>
+                  <Typography variant="h6" fontWeight="bold" gutterBottom>
+                    Recent Leads
+                  </Typography>
+                  
+                  {recentLeads.length === 0 ? (
+                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                      <PeopleIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                      <Typography color="text.secondary">
+                        No leads yet. Create your first lead!
+                      </Typography>
+                    </Box>
+                  ) : (
+                    recentLeads.map((lead, index) => (
+                      <Box
+                        key={lead._id}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          py: 2,
+                          borderBottom: index < recentLeads.length - 1 ? '1px solid' : 'none',
+                          borderColor: 'divider',
+                          '&:hover': { bgcolor: 'action.hover' }
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
+                            {lead.name?.charAt(0).toUpperCase()}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="subtitle2" fontWeight="bold">
+                              {lead.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {lead.email}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Chip
+                            label={lead.status}
+                            size="small"
+                            color={getStatusColor(lead.status)}
+                          />
+                          <Button
+                            size="small"
+                            onClick={() => navigate(`/leads/${lead._id}`)}
+                          >
+                            View
+                          </Button>
+                        </Box>
+                      </Box>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </>
+      )}
+    </Box>
   );
 };
 

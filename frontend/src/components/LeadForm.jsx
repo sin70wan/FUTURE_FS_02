@@ -1,4 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  TextField,
+  Button,
+  Grid,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Alert,
+  CircularProgress
+} from '@mui/material';
 
 const LeadForm = ({ lead, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -6,8 +18,12 @@ const LeadForm = ({ lead, onSubmit, onCancel }) => {
     email: '',
     phone: '',
     source: 'website',
-    status: 'new'
+    status: 'new',
+    followUpDate: ''
   });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     if (lead) {
@@ -16,169 +32,150 @@ const LeadForm = ({ lead, onSubmit, onCancel }) => {
         email: lead.email || '',
         phone: lead.phone || '',
         source: lead.source || 'website',
-        status: lead.status || 'new'
+        status: lead.status || 'new',
+        followUpDate: lead.followUpDate ? lead.followUpDate.split('T')[0] : ''
       });
     }
   }, [lead]);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    if (!validateForm()) return;
+    
+    setLoading(true);
+    setSubmitError('');
+    try {
+      await onSubmit(formData);
+    } catch (err) {
+      setSubmitError(err.response?.data?.error || 'Failed to save lead');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div>
-      <h2 style={styles.title}>
-        {lead ? 'Edit Lead' : 'Add New Lead'}
-      </h2>
+    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+      {submitError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {submitError}
+        </Alert>
+      )}
       
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <div style={styles.formGroup}>
-          <label style={styles.label}>Name *</label>
-          <input
-            type="text"
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="Full Name"
             name="name"
             value={formData.name}
             onChange={handleChange}
+            error={!!errors.name}
+            helperText={errors.name}
+            disabled={loading}
             required
-            style={styles.input}
-            placeholder="John Doe"
           />
-        </div>
-
-        <div style={styles.formGroup}>
-          <label style={styles.label}>Email *</label>
-          <input
-            type="email"
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <TextField
+            fullWidth
+            label="Email"
             name="email"
+            type="email"
             value={formData.email}
             onChange={handleChange}
+            error={!!errors.email}
+            helperText={errors.email}
+            disabled={loading}
             required
-            style={styles.input}
-            placeholder="john@example.com"
           />
-        </div>
-
-        <div style={styles.formGroup}>
-          <label style={styles.label}>Phone</label>
-          <input
-            type="tel"
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <TextField
+            fullWidth
+            label="Phone"
             name="phone"
             value={formData.phone}
             onChange={handleChange}
-            style={styles.input}
-            placeholder="+1 234 567 8900"
+            error={!!errors.phone}
+            helperText={errors.phone}
+            disabled={loading}
           />
-        </div>
-
-        <div style={styles.formGroup}>
-          <label style={styles.label}>Source</label>
-          <select
-            name="source"
-            value={formData.source}
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <FormControl fullWidth>
+            <InputLabel>Source</InputLabel>
+            <Select
+              name="source"
+              value={formData.source}
+              label="Source"
+              onChange={handleChange}
+              disabled={loading}
+            >
+              <MenuItem value="website">Website</MenuItem>
+              <MenuItem value="referral">Referral</MenuItem>
+              <MenuItem value="social">Social</MenuItem>
+              <MenuItem value="other">Other</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <FormControl fullWidth>
+            <InputLabel>Status</InputLabel>
+            <Select
+              name="status"
+              value={formData.status}
+              label="Status"
+              onChange={handleChange}
+              disabled={loading}
+            >
+              <MenuItem value="new">New</MenuItem>
+              <MenuItem value="contacted">Contacted</MenuItem>
+              <MenuItem value="converted">Converted</MenuItem>
+              <MenuItem value="lost">Lost</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="Follow-up Date"
+            name="followUpDate"
+            type="date"
+            value={formData.followUpDate}
             onChange={handleChange}
-            style={styles.select}
-          >
-            <option value="website">Website</option>
-            <option value="referral">Referral</option>
-            <option value="social">Social Media</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
+            disabled={loading}
+            InputLabelProps={{ shrink: true }}
+          />
+        </Grid>
+      </Grid>
 
-        <div style={styles.formGroup}>
-          <label style={styles.label}>Status</label>
-          <select
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            style={styles.select}
-          >
-            <option value="new">New</option>
-            <option value="contacted">Contacted</option>
-            <option value="converted">Converted</option>
-            <option value="lost">Lost</option>
-          </select>
-        </div>
-
-        <div style={styles.buttonGroup}>
-          <button type="submit" style={styles.submitButton}>
-            {lead ? 'Update Lead' : 'Create Lead'}
-          </button>
-          <button type="button" onClick={onCancel} style={styles.cancelButton}>
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
+        <Button onClick={onCancel} disabled={loading}>
+          Cancel
+        </Button>
+        <Button type="submit" variant="contained" disabled={loading}>
+          {loading ? <CircularProgress size={24} /> : (lead ? 'Update' : 'Create')}
+        </Button>
+      </Box>
+    </Box>
   );
-};
-
-const styles = {
-  title: {
-    marginBottom: '20px',
-    color: '#333'
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column'
-  },
-  formGroup: {
-    marginBottom: '15px'
-  },
-  label: {
-    display: 'block',
-    marginBottom: '5px',
-    fontWeight: '500',
-    color: '#555'
-  },
-  input: {
-    width: '100%',
-    padding: '8px 12px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px'
-  },
-  select: {
-    width: '100%',
-    padding: '8px 12px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-    backgroundColor: 'white'
-  },
-  buttonGroup: {
-    display: 'flex',
-    gap: '10px',
-    marginTop: '20px'
-  },
-  submitButton: {
-    flex: 1,
-    padding: '10px',
-    backgroundColor: '#007bff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px'
-  },
-  cancelButton: {
-    flex: 1,
-    padding: '10px',
-    backgroundColor: '#6c757d',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px'
-  }
 };
 
 export default LeadForm;
