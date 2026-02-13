@@ -1,69 +1,71 @@
 import api from './api';
 
-export const auth = {
+// Decode JWT token without external library
+export const decodeToken = (token) => {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (error) {
+        console.error('Error decoding token:', error);
+        return null;
+    }
+};
+
+export const authService = {
+    // Login user
     login: async (email, password) => {
-        try {
-            console.log('Attempting login to:', '/auth/login');
-            const response = await api.post('/auth/login', { email, password });
-            console.log('Login response:', response.data);
-            
-            if (response.data.token) {
-                localStorage.setItem('crm_auth_token', response.data.token);
-            }
-            
-            if (response.data.user) {
-                localStorage.setItem('user', JSON.stringify(response.data.user));
-            }
-            
-            return response.data;
-        } catch (error) {
-            console.error('Login service error:', error);
-            throw error;
+        const response = await api.post('/auth/login', { email, password });
+        if (response.data.token) {
+            localStorage.setItem('token', response.data.token);
         }
+        return response.data;
     },
 
+    // Register user
     register: async (userData) => {
-        try {
-            const response = await api.post('/auth/register', userData);
-            return response.data;
-        } catch (error) {
-            console.error('Register service error:', error);
-            throw error;
-        }
+        const response = await api.post('/auth/register', userData);
+        return response.data;
     },
 
+    // Get current user
+    getCurrentUser: async () => {
+        const response = await api.get('/auth/me');
+        return response.data;
+    },
+
+    // Logout
     logout: () => {
-        localStorage.removeItem('crm_auth_token');
-        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        window.location.href = '/login';
     },
 
+    // Check if authenticated
     isAuthenticated: () => {
-        const token = localStorage.getItem('crm_auth_token');
-        const user = localStorage.getItem('user');
-        return !!(token && user);
+        return !!localStorage.getItem('token');
     },
 
-    // ✅ ADD THIS FUNCTION - Check if current user is admin
+    // Get current user from token
+    getCurrentUserFromToken: () => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            return decodeToken(token);
+        }
+        return null;
+    },
+
+    // Get user role
+    getUserRole: () => {
+        const user = authService.getCurrentUserFromToken();
+        return user?.role || null;
+    },
+
+    // Check if admin
     isAdmin: () => {
-        try {
-            const userStr = localStorage.getItem('user');
-            if (!userStr) return false;
-            
-            const user = JSON.parse(userStr);
-            return user.role === 'admin';
-        } catch (e) {
-            console.error('Error checking admin status:', e);
-            return false;
-        }
-    },
-
-    getCurrentUser: () => {
-        const userStr = localStorage.getItem('user');
-        try {
-            return userStr ? JSON.parse(userStr) : null;
-        } catch (e) {
-            console.error('Error parsing user:', e);
-            return null;
-        }
+        const role = authService.getUserRole();
+        return role === 'admin';
     }
 };

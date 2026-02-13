@@ -7,9 +7,13 @@ import {
   DialogTitle,
   DialogContent,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Chip
 } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { 
+  Add as AddIcon,
+  AdminPanelSettings as AdminIcon
+} from '@mui/icons-material';
 import LeadList from '../components/LeadList';
 import LeadForm from '../components/LeadForm';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -23,14 +27,17 @@ const Leads = () => {
   const [openDelete, setOpenDelete] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
 
-  useEffect(() => {
-    fetchLeads();
-  }, []);
+  const user = JSON.parse(localStorage.getItem('crm_user') || '{}');
+  const isAdmin = user?.role === 'admin';
 
   const fetchLeads = async () => {
     setLoading(true);
     try {
-      const data = await leadService.getAllLeads();
+      const params = {};
+      if (!isAdmin && user?.id) {
+        params.assignedTo = user.id;
+      }
+      const data = await leadService.getAllLeads(params);
       setLeads(data);
       setError(null);
     } catch (err) {
@@ -40,6 +47,12 @@ const Leads = () => {
       setLoading(false);
     }
   };
+
+  // FIXED: Added eslint-disable comment
+  useEffect(() => {
+    fetchLeads();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAddLead = () => {
     setSelectedLead(null);
@@ -82,7 +95,11 @@ const Leads = () => {
             : lead
         ));
       } else {
-        const newLead = await leadService.createLead(leadData);
+        const newLeadData = {
+          ...leadData,
+          assignedTo: user.id
+        };
+        const newLead = await leadService.createLead(newLeadData);
         setLeads(prev => [newLead, ...prev]);
       }
       setOpenForm(false);
@@ -103,11 +120,35 @@ const Leads = () => {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Lead Management</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="h4">
+            {isAdmin ? 'All Leads' : 'My Leads'}
+          </Typography>
+          {isAdmin && (
+            <Chip
+              icon={<AdminIcon />}
+              label="Admin"
+              color="secondary"
+              size="small"
+              sx={{ 
+                bgcolor: 'secondary.main',
+                color: 'white',
+                '& .MuiChip-icon': { color: 'white' }
+              }}
+            />
+          )}
+        </Box>
         <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddLead}>
           Add New Lead
         </Button>
       </Box>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        {isAdmin 
+          ? `Total ${leads.length} leads in system` 
+          : `You have ${leads.length} assigned leads`
+        }
+      </Typography>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
@@ -119,8 +160,9 @@ const Leads = () => {
         leads={leads}
         loading={loading}
         onEdit={handleEditLead}
-        onDelete={handleDeleteClick}
+        onDelete={isAdmin ? handleDeleteClick : undefined}
         onRefresh={fetchLeads}
+        isAdmin={isAdmin}
       />
 
       <Dialog open={openForm} onClose={() => setOpenForm(false)} maxWidth="md" fullWidth>
@@ -134,16 +176,18 @@ const Leads = () => {
         </DialogContent>
       </Dialog>
 
-      <ConfirmDialog
-        open={openDelete}
-        title="Delete Lead"
-        message={`Are you sure you want to delete "${selectedLead?.name}"?`}
-        onConfirm={handleDeleteConfirm}
-        onCancel={() => {
-          setOpenDelete(false);
-          setSelectedLead(null);
-        }}
-      />
+      {isAdmin && (
+        <ConfirmDialog
+          open={openDelete}
+          title="Delete Lead"
+          message={`Are you sure you want to delete "${selectedLead?.name}"?`}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => {
+            setOpenDelete(false);
+            setSelectedLead(null);
+          }}
+        />
+      )}
     </Box>
   );
 };

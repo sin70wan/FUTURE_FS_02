@@ -1,196 +1,150 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../services/api';
+import {
+    Container, Paper, TextField, Button, Typography,
+    Box, Alert, CircularProgress
+} from '@mui/material';
+import { authService } from '../services/auth';
 
 const Register = () => {
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
+    const [formData, setFormData] = useState({
+        username: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
     });
-  };
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+    const handleChange = (e) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        });
+    };
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
 
-    setLoading(true);
+        if (formData.password !== formData.confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
 
-    try {
-      const response = await api.post('/auth/register', {
-        username: formData.username,
-        email: formData.email,
-        password: formData.password
-      });
+        if (formData.password.length < 6) {
+            setError('Password must be at least 6 characters');
+            return;
+        }
 
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
-    } finally {
-      setLoading(false);
-    }
-  };
+        setLoading(true);
 
-  return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>Create Account</h2>
-        <p style={styles.subtitle}>Sign up as a regular user</p>
-        
-        {error && <div style={styles.error}>{error}</div>}
-        
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.inputGroup}>
-            <label>Username</label>
-            <input
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              required
-              style={styles.input}
-              placeholder="johndoe"
-            />
-          </div>
-          
-          <div style={styles.inputGroup}>
-            <label>Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              style={styles.input}
-              placeholder="user@example.com"
-            />
-          </div>
-          
-          <div style={styles.inputGroup}>
-            <label>Password</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              style={styles.input}
-              placeholder="••••••••"
-            />
-          </div>
-          
-          <div style={styles.inputGroup}>
-            <label>Confirm Password</label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              style={styles.input}
-              placeholder="••••••••"
-            />
-          </div>
-          
-          <button 
-            type="submit" 
-            disabled={loading}
-            style={styles.button}
-          >
-            {loading ? 'Creating account...' : 'Register'}
-          </button>
-          
-          <div style={styles.link}>
-            Already have an account? <Link to="/login">Login here</Link>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
+        try {
+            await authService.register({
+                username: formData.username,
+                email: formData.email,
+                password: formData.password,
+                role: 'user' // Default role
+            });
+            
+            // Auto login after registration
+            await authService.login(formData.email, formData.password);
+            navigate('/dashboard');
+        } catch (err) {
+            setError(err.response?.data?.error || 'Registration failed');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-const styles = {
-  container: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: '100vh',
-    backgroundColor: '#f5f5f5'
-  },
-  card: {
-    backgroundColor: 'white',
-    padding: '40px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    width: '100%',
-    maxWidth: '400px'
-  },
-  title: {
-    marginBottom: '5px',
-    textAlign: 'center',
-    color: '#333'
-  },
-  subtitle: {
-    marginBottom: '30px',
-    textAlign: 'center',
-    color: '#666',
-    fontSize: '14px'
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column'
-  },
-  inputGroup: {
-    marginBottom: '20px'
-  },
-  input: {
-    width: '100%',
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '16px',
-    marginTop: '5px'
-  },
-  button: {
-    padding: '12px',
-    backgroundColor: '#1976d2',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '16px',
-    cursor: 'pointer',
-    marginTop: '10px'
-  },
-  error: {
-    backgroundColor: '#ffebee',
-    color: '#c62828',
-    padding: '10px',
-    borderRadius: '4px',
-    marginBottom: '20px',
-    textAlign: 'center'
-  },
-  link: {
-    marginTop: '20px',
-    textAlign: 'center',
-    color: '#666'
-  }
+    return (
+        <Container maxWidth="sm">
+            <Box sx={{ mt: 8, mb: 4 }}>
+                <Paper elevation={3} sx={{ p: 4 }}>
+                    <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: 'bold' }}>
+                        Create Account
+                    </Typography>
+                    <Typography variant="subtitle1" align="center" color="textSecondary" sx={{ mb: 3 }}>
+                        Register for Mini CRM
+                    </Typography>
+                    
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {error}
+                        </Alert>
+                    )}
+
+                    <form onSubmit={handleSubmit}>
+                        <TextField
+                            fullWidth
+                            label="Username"
+                            name="username"
+                            value={formData.username}
+                            onChange={handleChange}
+                            margin="normal"
+                            required
+                            autoFocus
+                        />
+                        
+                        <TextField
+                            fullWidth
+                            label="Email"
+                            name="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            margin="normal"
+                            required
+                        />
+                        
+                        <TextField
+                            fullWidth
+                            label="Password"
+                            name="password"
+                            type="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            margin="normal"
+                            required
+                            helperText="Minimum 6 characters"
+                        />
+                        
+                        <TextField
+                            fullWidth
+                            label="Confirm Password"
+                            name="confirmPassword"
+                            type="password"
+                            value={formData.confirmPassword}
+                            onChange={handleChange}
+                            margin="normal"
+                            required
+                        />
+                        
+                        <Button
+                            fullWidth
+                            type="submit"
+                            variant="contained"
+                            size="large"
+                            disabled={loading}
+                            sx={{ mt: 3, mb: 2 }}
+                        >
+                            {loading ? <CircularProgress size={24} /> : 'Register'}
+                        </Button>
+                        
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="body2">
+                                Already have an account?{' '}
+                                <Link to="/login" style={{ textDecoration: 'none' }}>
+                                    Sign in here
+                                </Link>
+                            </Typography>
+                        </Box>
+                    </form>
+                </Paper>
+            </Box>
+        </Container>
+    );
 };
 
 export default Register;

@@ -27,14 +27,19 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
-const LeadList = ({ leads, loading, onEdit, onDelete, onRefresh }) => {
+const LeadList = ({ leads, loading, onEdit, onDelete, onRefresh, isAdmin = false }) => {
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
 
   const getStatusColor = (status) => {
-    const colors = { new: 'primary', contacted: 'warning', converted: 'success', lost: 'error' };
+    const colors = { 
+      new: 'info', 
+      contacted: 'warning', 
+      converted: 'success', 
+      lost: 'error' 
+    };
     return colors[status] || 'default';
   };
 
@@ -85,6 +90,8 @@ const LeadList = ({ leads, loading, onEdit, onDelete, onRefresh }) => {
               <TableCell>Contact</TableCell>
               <TableCell>Source</TableCell>
               <TableCell>Status</TableCell>
+              {/* Show Assigned To column ONLY for admins */}
+              {isAdmin && <TableCell>Assigned To</TableCell>}
               <TableCell>Created</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
@@ -121,6 +128,19 @@ const LeadList = ({ leads, loading, onEdit, onDelete, onRefresh }) => {
                     size="small"
                   />
                 </TableCell>
+                {/* Show Assigned To column ONLY for admins */}
+                {isAdmin && (
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Avatar sx={{ width: 24, height: 24, bgcolor: 'info.main' }}>
+                        {lead.assignedTo?.username?.charAt(0)?.toUpperCase() || '?'}
+                      </Avatar>
+                      <Typography variant="body2">
+                        {lead.assignedTo?.username || 'Unassigned'}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                )}
                 <TableCell>
                   <Typography variant="body2">
                     {new Date(lead.createdAt).toLocaleDateString()}
@@ -132,29 +152,32 @@ const LeadList = ({ leads, loading, onEdit, onDelete, onRefresh }) => {
                       size="small"
                       onClick={() => navigate(`/leads/${lead._id || lead.id}`)}
                     >
-                      <VisibilityIcon />
+                      <VisibilityIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Edit">
                     <IconButton size="small" onClick={() => onEdit(lead)}>
-                      <EditIcon />
+                      <EditIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Delete">
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => onDelete(lead)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
+                  {/* Show Delete button ONLY if onDelete prop exists (admin only) */}
+                  {onDelete && (
+                    <Tooltip title="Delete">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => onDelete(lead)}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
             {filteredLeads.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={isAdmin ? 7 : 6} align="center" sx={{ py: 3 }}>
                   <Typography color="text.secondary">
                     {searchTerm ? 'No leads match your search' : 'No leads found'}
                   </Typography>
