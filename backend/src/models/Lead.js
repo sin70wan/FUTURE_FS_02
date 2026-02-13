@@ -1,78 +1,56 @@
 const mongoose = require('mongoose');
 
+const noteSchema = new mongoose.Schema({
+    content: {
+        type: String,
+        required: true
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }
+});
+
 const leadSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: [true, 'Please add a name'],
+        required: true,
         trim: true
     },
     email: {
         type: String,
-        required: [true, 'Please add an email'],
-        unique: true,
-        trim: true,
+        required: true,
         lowercase: true,
-        match: [
-            /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-            'Please add a valid email'
-        ]
+        trim: true
     },
     phone: {
         type: String,
         trim: true
     },
-    company: {
-        type: String,
-        trim: true
-    },
     source: {
         type: String,
-        enum: ['Website', 'LinkedIn', 'Referral', 'Email Campaign', 'Social', 'Other'],
-        default: 'Website'
+        enum: ['website', 'referral', 'social', 'other'],
+        default: 'website'
     },
     status: {
         type: String,
-        enum: ['New', 'Contacted', 'Converted', 'Lost'],
-        default: 'New'
+        enum: ['new', 'contacted', 'converted', 'lost'],
+        default: 'new'
     },
-    notes: [{
-        content: {
-            type: String,
-            required: true
-        },
-        createdBy: {
-            type: String,
-            default: 'System'
-        },
-        type: {
-            type: String,
-            enum: ['call', 'email', 'meeting', 'note', 'status', 'created'],
-            default: 'note'
-        }
-    }],
-    lastContact: {
-        type: Date,
-        default: Date.now
-    },
+    notes: [noteSchema],
     followUpDate: {
         type: Date
     },
     assignedTo: {
-        type: String
-    },
-    location: {
-        type: String
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }
 }, {
     timestamps: true
-});
-
-// Update lastContact when status changes
-leadSchema.pre('save', function(next) {
-    if (this.isModified('status')) {
-        this.lastContact = Date.now();
-    }
-    next();
 });
 
 module.exports = mongoose.model('Lead', leadSchema);
